@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "805133067352",
+    "project_id": "endrush-fa0ab",
+    "storage_bucket": "endrush-fa0ab.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:805133067352:android:0b0d206802105baf13162d",
+        "android_client_info": {
+          "package_name": "com.spy247.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUMZ_9M-B34CxbP_jc3qxNJiJxNTNbPsk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

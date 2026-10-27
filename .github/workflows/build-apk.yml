@@ -1,0 +1,72 @@
+name: Build Spy 247 APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup Java JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          sdk: 34
+      
+      - name: Cache Gradle Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle.kts') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle
+      
+      - name: Build APK (Debug)
+        run: |
+          cd scratchpad/com/spy247/app
+          gradlew assembleDebug
+        
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: spy247-debug-apk
+          path: scratchpad/com/spy247/app/build/outputs/apk/debug/app-debug.apk
+      
+      - name: Build Release APK (Optional)
+        run: |
+          cd scratchpad/com/spy247/app
+          gradlew assembleRelease
+        
+      - name: Upload Release APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: spy247-release-apk
+          path: scratchpad/com/spy247/app/build/outputs/apk/release/app-release.apk
+      
+      - name: Deploy to Google Play (Optional)
+        if: github.ref == 'refs/heads/main'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
+          packageName: "com.spy247.app"
+          files: "scratchpad/com/spy247/app/build/outputs/apk/release/"
+      
+      - name: Display Build Summary
+        run: |
+          echo "📦 APK built successfully!"
+          echo "🔗 Download from: https://github.com/${{ github.repository }}/actions/artifacts"

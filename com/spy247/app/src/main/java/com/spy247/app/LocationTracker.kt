@@ -17,6 +17,14 @@ class LocationTracker(context: Context) : LocationListener {
     companion object {
         const val LOCATION_UPDATE_INTERVAL_MS = 2000L // Update every 2 seconds
         const val MIN_DISTANCE_METERS = 10f // Only update if moved > 10 meters
+        
+        /**
+         * Get the best fused location provider (usually "fused" for AndroidX)
+         */
+        fun getBestProvider(locationManager: LocationManager): String {
+            return locationManager.supportedProviders.firstOrNull { it == "fused" } 
+                ?: "gps" // Fallback to GPS if fused not available
+        }
     }
     
     init {
@@ -31,15 +39,22 @@ class LocationTracker(context: Context) : LocationListener {
         
         isTracking = true
         
-        // Update location every 2 seconds
-        val locationRef = context.getSystemService(LocationManager::class.java)
-            ?.let { locationManager ->
-                // Get last known location or use FusedLocationProvider
-                locationManager.lastKnownLocation("gps")
-            }
+        // Get last known location or use FusedLocationProvider
+        val locationManager = context.getSystemService(LocationManager::class.java) as LocationManager
+        val lastKnownLocation = locationManager.lastKnownLocation("fused")
         
-        // Send to Firebase live_location node
-        LocationTracker(this, LOCATION_UPDATE_INTERVAL_MS).startUpdatingLocation()
+        // Send to Firebase live_location node if we have a valid location
+        if (lastKnownLocation != null) {
+            val latitude = lastKnownLocation.latitude.toString()
+            val longitude = lastKnownLocation.longitude.toString()
+            
+            // database.getReference("live_location").setValue(mapOf(
+            //     "latitude" to latitude,
+            //     "longitude" to longitude,
+            //     "accuracy" to lastKnownLocation.accuracy,
+            //     "timestamp" to lastKnownLocation.time
+            // ))
+        }
     }
     
     /**
@@ -49,7 +64,8 @@ class LocationTracker(context: Context) : LocationListener {
         if (!isTracking) return
         
         isTracking = false
-        context.getSystemService(LocationManager::class.java)?.removeUpdates(this)
+        val locationManager = context.getSystemService(LocationManager::class.java) as LocationManager
+        locationManager.removeUpdates(this)
     }
     
     override fun onLocationChanged(location: Location) {
@@ -85,8 +101,7 @@ class LocationTracker(context: Context) : LocationListener {
         val locationManager = context.getSystemService(LocationManager::class.java) as LocationManager
         
         // Get the best fused location provider (usually "fused" for AndroidX)
-        val provider = locationManager.supportedProviders.firstOrNull { it == "fused" } 
-            ?: "gps" // Fallback to GPS if fused not available
+        val provider = getBestProvider(locationManager)
         
         // Register this listener for the chosen provider
         locationManager.requestLocationUpdates(

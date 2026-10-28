@@ -1,9 +1,9 @@
 package com.spy247.app
 
 import android.content.Context
-import android.net.ConnectivityManager
+import android.net.ConnectivityManager as AndroidConnectivityManager
 import android.net.Network
-import android.net.NetworkCallback
+import android.net.NetworkCallback as AndroidNetworkCallback
 import java.util.concurrent.Executors
 
 /**
@@ -27,7 +27,7 @@ class ConnectivityManager(context: Context) {
         
         isMonitoring = true
         
-        val networkCallback = object : NetworkCallback() {
+        val networkCallback = object : AndroidNetworkCallback() {
             override fun onAvailable(network: Network) {
                 // WiFi or mobile data came online
                 broadcastStatus("online")
@@ -42,7 +42,7 @@ class ConnectivityManager(context: Context) {
             }
         }
         
-        val connectivityManager = context.getSystemService(ConnectivityManager::class.java)
+        val connectivityManager = context.getSystemService(AndroidConnectivityManager::class.java)
         
         // Register for network changes (Android 10+)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
@@ -69,11 +69,11 @@ class ConnectivityManager(context: Context) {
         
         isMonitoring = false
         
-        val connectivityManager = context.getSystemService(ConnectivityManager::class.java)
+        val connectivityManager = context.getSystemService(AndroidConnectivityManager::class.java)
         
         // Unregister network callbacks
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            connectivityManager.unregisterNetworkCallback(object : NetworkCallback() {})
+            connectivityManager.unregisterNetworkCallback(object : AndroidNetworkCallback() {})
         }
     }
     

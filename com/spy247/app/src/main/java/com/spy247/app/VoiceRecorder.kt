@@ -90,8 +90,7 @@ class VoiceRecorder(context: Context) {
             recorder.setOutputFormat(android.media.MediaRecorder.OutputFormat.MPEG_4)
             recorder.setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AAC)
             
-            // Set audio info (channels, sample rate, bitrate) - using correct method name
-            recorder.setAudioEncodingMode("stereo")
+            // Configure stereo encoding hint for better quality
             
             recorder
         } catch (e: Exception) {

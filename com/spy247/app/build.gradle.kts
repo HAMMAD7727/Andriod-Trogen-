@@ -1,16 +1,7 @@
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath("com.android.tools.build:gradle:8.5.2")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21")
-    }
+plugins {
+    id("com.android.application") version "8.5.0"
+    id("org.jetbrains.kotlin.android") version "1.9.24"
 }
-
-apply(plugin = "com.android.application")
-apply(plugin = "org.jetbrains.kotlin.android")
 
 android {
     namespace = "com.spy247.app"

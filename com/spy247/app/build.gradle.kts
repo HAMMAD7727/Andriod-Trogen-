@@ -60,9 +60,8 @@ dependencies {
     // MediaRecorder for mic & video encoding
     implementation("com.google.android.material:material:1.9.0")
     
-    // Firebase Realtime Database (using Kotlin extensions)
-    implementation(platform("com.google.firebase:firebase-bom:10.2.0"))
-    implementation("com.google.firebase:firebase-database-ktx:10.2.0")
+    // Firebase Realtime Database
+    implementation("com.google.firebase:firebase-database:23.0.0")
     
     // Gson for JSON serialization of media chunks
     implementation("com.google.code.gson:gson:2.10.1")

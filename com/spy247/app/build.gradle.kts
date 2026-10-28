@@ -71,3 +71,10 @@ dependencies {
     // Lottie for animated loading states
     implementation("com.airbnb.android:lottie:6.2.0")
 }
+// Gradle 9 validates resource-task inputs strictly; make both generated inputs explicit.
+tasks.named("generateDebugResources") {
+    dependsOn(
+        "dataBindingMergeDependencyArtifactsDebug",
+        "mergeDebugNativeDebugMetadata"
+    )
+}

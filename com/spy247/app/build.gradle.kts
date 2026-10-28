@@ -1,6 +1,16 @@
-plugins {
-    id("com.android.application")
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.5.2")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21")
+    }
 }
+
+apply(plugin = "com.android.application")
+apply(plugin = "org.jetbrains.kotlin.android")
 
 android {
     namespace = "com.spy247.app"
@@ -43,6 +53,14 @@ android {
     buildFeatures {
         viewBinding = true
     }
+
+    sourceSets {
+        getByName("main") {
+            manifest.srcFile("AndroidManifest.xml")
+            java.srcDirs(".")
+            res.srcDirs(".")
+        }
+    }
 }
 
 dependencies {
@@ -59,8 +77,8 @@ dependencies {
     implementation("com.google.android.material:material:1.9.0")
     
     // Firebase Realtime Database (using Kotlin extensions)
-    implementation(platform("com.google.firebase:firebase-bom:10.2.0"))
-    implementation("com.google.firebase:firebase-database-ktx:10.2.0")
+    implementation(platform("com.google.firebase:firebase-bom:33.6.0"))
+    implementation("com.google.firebase:firebase-database-ktx")
     
     // Gson for JSON serialization of media chunks
     implementation("com.google.code.gson:gson:2.10.1")

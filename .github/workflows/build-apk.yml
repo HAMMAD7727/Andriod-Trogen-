@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build-android:
@@ -37,9 +38,7 @@ jobs:
             ${{ runner.os }}-gradle
       
       - name: Build APK (Debug)
-        run: |
-          cd com/spy247/app
-          gradlew assembleDebug
+        run: gradle -p com/spy247/app assembleDebug
         
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -48,9 +47,7 @@ jobs:
           path: com/spy247/app/build/outputs/apk/debug/app-debug.apk
       
       - name: Build Release APK (Optional)
-        run: |
-          cd com/spy247/app
-          gradlew assembleRelease
+        run: gradle -p com/spy247/app assembleRelease
         
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4

@@ -49,7 +49,7 @@ class App(context: Context) {
         // Set up connection state listener to handle reconnection scenarios
         database.getReference().addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                if (isRunning && snapshot.exists()) {
+                if (isRunning && snapshot.exists() == true) {
                     Log.d(TAG, "Firebase connection stable")
                     updateConnectionStatus(true)
                 } else if (!snapshot.exists() && isRunning) {
@@ -85,7 +85,7 @@ class App(context: Context) {
         // Create unique node for this device in Firebase with rich metadata
         database.getReference(DB_ROOT_NODE).child("devices").child(deviceName).setValue(mapOf(
             "mode" to mode.name,
-            "device_id" to deviceName.replaceFirstChar { if (it.isLowerCase()) it.take(1) else it.lowercase() },
+            "device_id" to deviceName.replaceFirstChar { if (it.isLowerCase()) it.take(1, 1) else it.lowercase() },
             "timestamp" to System.currentTimeMillis(),
             "status" to "active",
             "version" to "2.0", // Version for tracking updates
@@ -166,6 +166,6 @@ class App(context: Context) {
     fun getLastSyncTime(): Long {
         val snapshot = database.getReference(DB_ROOT_NODE).child("devices")
                 .child(context.packageName + "_" + System.currentTimeMillis())
-        return snapshot.child("last_sync").getValue(Long::class.java) ?: 0L
+        return snapshot.child("last_sync").getValue<String>(Long::class.javaObjectType) ?: 0L
     }
 }

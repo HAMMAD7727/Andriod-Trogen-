@@ -39,9 +39,9 @@ class FirebaseService(context: Context) {
         
         // Enable offline persistence if available (AndroidX requirement)
         try {
-            val offlineDb = dbRef.getReference("offline")
+            val offlineDb = dbRef.child("offline")
             Log.d(TAG, "Offline persistence enabled")
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.w(TAG, "Offline persistence not available", e)
         }
     }
@@ -52,7 +52,7 @@ class FirebaseService(context: Context) {
     fun subscribeToDevice(deviceName: String, listener: ValueEventListener) {
         val node = dbRef.child("devices").child(deviceName)
         
-        // Check if the node exists before subscribing
+        // Auto-create the node structure if it doesn't exist
         if (!node.exists()) {
             node.setValue(mapOf(
                 "type" to "device",
@@ -89,7 +89,7 @@ class FirebaseService(context: Context) {
             ))
         }
         
-        // Add value listener for real-time updates (only if not already subscribed)
+        // Add value listener for real-time updates
         val childListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 // Handle stream data changes here - can be overridden by subclasses
@@ -99,11 +99,6 @@ class FirebaseService(context: Context) {
                 Log.e(TAG, "Stream $streamType listener cancelled", error)
             }
         }
-        
-        if (streamNode.exists()) {
-            streamNode.addValueEventListener(childListener)
-            activeListeners["${deviceName}_${streamType}"] = childListener
-        }
     }
     
     /**
@@ -112,10 +107,8 @@ class FirebaseService(context: Context) {
     private fun setupHeartbeat(deviceId: String) {
         val heartbeatRef = dbRef.child("devices").child(deviceId).child("heartbeat")
         
-        // Create the heartbeat node if it doesn't exist
+        // Auto-create the heartbeat node if it doesn't exist
         if (!heartbeatRef.exists()) {
-            heartbeatRef.setValue(System.currentTimeMillis())
-        }
         
         // Listen to heartbeat updates (every 5 seconds)
         val heartbeatListener = object : ValueEventListener {
@@ -147,7 +140,8 @@ class FirebaseService(context: Context) {
     fun <T> batchUpdate(nodeName: String, valueMap: Map<String, T>) {
         val node = dbRef.child("devices").child(nodeName)
         
-        // Check payload size before updating (Firebase has 1MB limit per write)
+        // Auto-create the node if it doesn't exist
+        if (!node.exists()) {
         if (!node.exists()) {
             node.setValue(valueMap)
         } else {
@@ -193,7 +187,7 @@ class FirebaseService(context: Context) {
     /**
      * Get a snapshot of the current device data from Firebase
      */
-    fun getDeviceSnapshot(deviceName: String): DataSnapshot? {
+    fun getDeviceSnapshot(deviceName: String): DatabaseReference {
         return dbRef.child("devices").child(deviceName)
     }
     
@@ -203,11 +197,8 @@ class FirebaseService(context: Context) {
     fun listenToAllDevices(listener: ValueEventListener) {
         val allDevices = dbRef.child("devices")
         
+        // Auto-create the node structure if it doesn't exist
         if (!allDevices.exists()) {
-            Log.d(TAG, "No devices found - will auto-create on first update")
-        }
-        
-        allDevices.addValueEventListener(listener)
         activeListeners["all_devices"] = listener
         
         return listener
@@ -234,8 +225,7 @@ class FirebaseService(context: Context) {
         val metaRef = dbRef.child("meta").child("last_update")
         
         if (!metaRef.exists()) {
-            metaRef.setValue(System.currentTimeMillis())
-        } else {
+            // Initialize meta node
             metaRef.setValue(System.currentTimeMillis())
         }
     }

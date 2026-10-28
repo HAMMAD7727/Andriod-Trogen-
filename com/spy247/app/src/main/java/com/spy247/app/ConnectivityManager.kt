@@ -51,9 +51,7 @@ class ConnectivityManager(context: Context) {
             // Fallback for older Android versions
             val networks = connectivityManager.allNetworks ?: emptyList()
             for (network in networks) {
-                connectivityManager.getNetwork(network).let {
-                    it.addNetworkCallback(networkCallback)
-                }
+                connectivityManager.getNetwork(network).addNetworkCallback(networkCallback)
             }
         }
         
@@ -71,9 +69,15 @@ class ConnectivityManager(context: Context) {
         
         val connectivityManager = context.getSystemService(AndroidConnectivityManager::class.java)
         
-        // Unregister network callbacks
+        // Unregister the default network callback
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            connectivityManager.unregisterNetworkCallback(object : AndroidNetworkCallback() {})
+            connectivityManager.unregisterDefaultNetworkCallback(networkCallback)
+        } else {
+            // For pre-Q, unregister from each individual network
+            val networks = connectivityManager.allNetworks ?: emptyList()
+            for (network in networks) {
+                connectivityManager.getNetwork(network).unregisterNetworkCallback(networkCallback)
+            }
         }
     }
     

@@ -148,7 +148,7 @@ class FirebaseService(context: Context) {
         val node = dbRef.child("devices").child(nodeName)
         
         // Check payload size before updating (Firebase has 1MB limit per write)
-        if (node.exists()) {
+        if (!node.exists()) {
             node.setValue(valueMap)
         } else {
             node.setValue(valueMap)
@@ -176,7 +176,10 @@ class FirebaseService(context: Context) {
     fun updateField(deviceName: String, fieldName: String, value: Any) {
         val node = dbRef.child("devices").child(deviceName)
         
-        if (node.exists()) {
+        if (!node.exists()) {
+            // Create new node if it doesn't exist
+            node.setValue(mapOf(fieldName to value))
+        } else {
             // Get current value and merge with new field
             val snapshot = node.getValue(Map::class.java) ?: mapOf()
             val updatedMap = (snapshot as? MutableMap<String, Any>)?.apply {
@@ -184,9 +187,6 @@ class FirebaseService(context: Context) {
             } ?: mapOf(fieldName to value)
             
             node.setValue(updatedMap)
-        } else {
-            // Create new node if it doesn't exist
-            node.setValue(mapOf(fieldName to value))
         }
     }
     

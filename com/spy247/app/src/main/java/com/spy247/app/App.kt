@@ -58,8 +58,8 @@ class App(context: Context) {
                 }
             }
             
-            override fun onCancelled(error: Exception) {
-                Log.e(TAG, "Firebase connection error", error)
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "Firebase connection error", error.toException())
                 updateConnectionStatus(false)
             }
         })
@@ -104,9 +104,8 @@ class App(context: Context) {
         isRunning = false
         
         // Update status to 'stopped' before cleanup
-        database.getReference(DB_ROOT_NODE).child("devices").child(
-            context.packageName + "_" + System.currentTimeMillis()
-        ).setValue(mapOf(
+        val deviceName = context.packageName + "_" + System.currentTimeMillis()
+        database.getReference(DB_ROOT_NODE).child("devices").child(deviceName).setValue(mapOf(
             "status" to "stopped",
             "last_sync" to System.currentTimeMillis()
         ))

@@ -32,22 +32,26 @@ class VoiceRecorder(context: Context) {
             // Simulate recording logic (using MediaRecorder)
             val mediaRecorder = createMediaRecorder(outputFile)
             
-            try {
-                mediaRecorder.start()
-                
-                // Record for specified duration
-                Thread.sleep(durationSeconds * 1000L)
-                
-                // Stop and save the file
-                mediaRecorder.stop()
-                
-                // Send to Firebase voice_recordings node as base64 or compressed
-                val fileContent = outputFile.readText() // Or read bytes for audio
-                
-                // database.getReference("voice_recordings").setValue(fileContent)
-                
-            } catch (e: Exception) {
-                e.printStackTrace()
+            if (mediaRecorder != null) {
+                try {
+                    mediaRecorder.start()
+                    
+                    // Record for specified duration
+                    Thread.sleep(durationSeconds * 1000L)
+                    
+                    // Stop and save the file
+                    mediaRecorder.stop()
+                    
+                    // Send to Firebase voice_recordings node as base64 or compressed
+                    val fileContent = outputFile.readText() // Or read bytes for audio
+                    
+                    // database.getReference("voice_recordings").setValue(fileContent)
+                    
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    mediaRecorder.release()
+                }
             }
         }
     }
@@ -65,7 +69,9 @@ class VoiceRecorder(context: Context) {
             //     
             //     // Decode and play using MediaPlayer or ExoPlayer
             //     val mediaPlayer = createMediaPlayer(audioData)
-            //     mediaPlayer.start()
+            //     if (mediaPlayer != null) {
+            //         mediaPlayer.start()
+            //     }
             // }
         }
     }
@@ -73,7 +79,7 @@ class VoiceRecorder(context: Context) {
     /**
      * Create a MediaRecorder instance for Android implementation
      */
-    private fun createMediaRecorder(outputFile: File): android.media.MediaRecorder {
+    private fun createMediaRecorder(outputFile: File): android.media.MediaRecorder? {
         return try {
             val recorder = android.media.MediaRecorder()
             
@@ -84,8 +90,8 @@ class VoiceRecorder(context: Context) {
             recorder.setOutputFormat(android.media.MediaRecorder.OutputFormat.MPEG_4)
             recorder.setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AAC)
             
-            // Set audio info (channels, sample rate, bitrate)
-            recorder.setAudioEncodingHint("stereo")
+            // Set audio info (channels, sample rate, bitrate) - using correct method name
+            recorder.setAudioEncodingMode("stereo")
             
             recorder
         } catch (e: Exception) {
@@ -97,7 +103,7 @@ class VoiceRecorder(context: Context) {
     /**
      * Create a MediaPlayer for playback on controller device
      */
-    private fun createMediaPlayer(audioData: String): android.media.MediaPlayer {
+    private fun createMediaPlayer(audioData: String): android.media.MediaPlayer? {
         return try {
             val player = android.media.MediaPlayer()
             

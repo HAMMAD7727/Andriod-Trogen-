@@ -24,7 +24,10 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          sdk: 34
+          packages: |
+            platform-tools
+            platforms;android-34
+            build-tools;34.0.0
       
       - name: Cache Gradle Dependencies
         uses: actions/cache@v4
@@ -38,25 +41,23 @@ jobs:
       
       - name: Build APK (Debug)
         run: |
-          cd scratchpad/com/spy247/app
-          gradlew assembleDebug
+          gradle -p com/spy247/app assembleDebug
         
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: spy247-debug-apk
-          path: scratchpad/com/spy247/app/build/outputs/apk/debug/app-debug.apk
+          path: com/spy247/app/build/outputs/apk/debug/app-debug.apk
       
       - name: Build Release APK (Optional)
         run: |
-          cd scratchpad/com/spy247/app
-          gradlew assembleRelease
+          gradle -p com/spy247/app assembleRelease
         
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: spy247-release-apk
-          path: scratchpad/com/spy247/app/build/outputs/apk/release/app-release.apk
+          path: com/spy247/app/build/outputs/apk/release/app-release.apk
       
       - name: Deploy to Google Play (Optional)
         if: github.ref == 'refs/heads/main'
@@ -64,7 +65,7 @@ jobs:
         with:
           serviceAccountJson: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
           packageName: "com.spy247.app"
-          files: "scratchpad/com/spy247/app/build/outputs/apk/release/"
+          files: "com/spy247/app/build/outputs/apk/release/"
       
       - name: Display Build Summary
         run: |

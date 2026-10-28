@@ -1,5 +1,6 @@
 plugins {
-    id("com.android.application")
+    id("com.android.application") version "8.5.0"
+    id("org.jetbrains.kotlin.android") version "1.9.24"
 }
 
 android {
@@ -43,6 +44,14 @@ android {
     buildFeatures {
         viewBinding = true
     }
+
+    sourceSets {
+        getByName("main") {
+            manifest.srcFile("AndroidManifest.xml")
+            java.srcDirs(".")
+            res.srcDirs(".")
+        }
+    }
 }
 
 dependencies {
@@ -59,8 +68,8 @@ dependencies {
     implementation("com.google.android.material:material:1.9.0")
     
     // Firebase Realtime Database (using Kotlin extensions)
-    implementation(platform("com.google.firebase:firebase-bom:10.2.0"))
-    implementation("com.google.firebase:firebase-database-ktx:10.2.0")
+    implementation(platform("com.google.firebase:firebase-bom:33.6.0"))
+    implementation("com.google.firebase:firebase-database-ktx")
     
     // Gson for JSON serialization of media chunks
     implementation("com.google.code.gson:gson:2.10.1")

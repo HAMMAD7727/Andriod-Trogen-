@@ -21,7 +21,7 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
     private lateinit var firebaseService: FirebaseService
     private lateinit var mediaManager: MediaManager
     private lateinit var locationTracker: LocationTracker
-    private lateinit var connectivityManager: ConnectivityManager
+    private lateinit var networkMonitor: NetworkMonitor
     
     // Gesture detector for swipe controls on controller screen
     private lateinit var gestureDetector: GestureDetector
@@ -43,7 +43,7 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
         firebaseService = FirebaseService(this)
         mediaManager = MediaManager(this)
         locationTracker = LocationTracker(this)
-        connectivityManager = ConnectivityManager(this)
+        networkMonitor = NetworkMonitor(this)
         
         // Get device mode from preferences or intent
         val modeString = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
         app.start(mode)
         
         // Setup connectivity monitoring
-        connectivityManager.startMonitoring()
+        networkMonitor.startMonitoring()
         
         // Initialize device in Firebase database
         firebaseService.initializeDevice(app.getDeviceName(), mode)
@@ -233,7 +233,7 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
         super.onDestroy()
         
         app.stop()
-        connectivityManager.stopMonitoring()
+        networkMonitor.stopMonitoring()
         
         Toast.makeText(this, "App stopped", Toast.LENGTH_SHORT).show()
     }

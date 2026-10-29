@@ -66,11 +66,20 @@ class App(context: Context) {
         
         // Listen to the main device node for real-time updates
         val deviceNode = database.getReference(DB_ROOT_NODE).child("devices")
-        if (deviceNode.exists()) {
-            Log.d(TAG, "Device found in Firebase: ${database.reference.key}")
-        } else {
-            Log.d(TAG, "Firebase initialized - waiting for device registration")
-        }
+        deviceNode.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    Log.d(TAG, "Device found in Firebase: ${snapshot.key}")
+                } else {
+                    Log.d(TAG, "Firebase initialized - waiting for device registration")
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "Error checking device", error.toException())
+                Log.d(TAG, "Firebase initialized - waiting for device registration")
+            }
+        })
     }
     
     /**
@@ -85,7 +94,7 @@ class App(context: Context) {
         // Create unique node for this device in Firebase with rich metadata
         database.getReference(DB_ROOT_NODE).child("devices").child(deviceName).setValue(mapOf(
             "mode" to mode.name,
-            "device_id" to deviceName.replaceFirstChar { if (it.isLowerCase()) it.take(1, 1) else it.lowercase() },
+            "device_id" to deviceName.lowercase(),
             "timestamp" to System.currentTimeMillis(),
             "status" to "active",
             "version" to "2.0", // Version for tracking updates
@@ -158,14 +167,5 @@ class App(context: Context) {
             "connected" to isConnected,
             "timestamp" to System.currentTimeMillis()
         ))
-    }
-    
-    /**
-     * Helper method to get the latest timestamp from Firebase
-     */
-    fun getLastSyncTime(): Long {
-        val snapshot = database.getReference(DB_ROOT_NODE).child("devices")
-                .child(context.packageName + "_" + System.currentTimeMillis())
-        return snapshot.child("last_sync").getValue<String>(Long::class.javaObjectType) ?: 0L
     }
 }

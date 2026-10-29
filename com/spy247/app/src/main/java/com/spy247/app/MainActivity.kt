@@ -261,11 +261,9 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
     private fun updateUIFromFirebase(snapshot: DataSnapshot) {
         // Only update the controller UI when we are on the controller layout
         if (findViewById<CardView>(R.id.video_container) != null) {
-            // Get stream count from nested children
-            val cameraCount = snapshot.child("camera_stream").getValue(Boolean::class.java) ?: false
+            // Get stream count from nested children        val cameraCount = snapshot.child("camera_stream").getValue(Boolean::class.java) ?: false
             val micCount = snapshot.child("mic_stream").getValue(Boolean::class.java) ?: false
-            val locationCount =
-                snapshot.child("live_location").getValue(Boolean::class.java) ?: false
+            val locationCount = snapshot.child("live_location").getValue(Boolean::class.java) ?: false
 
             // Update stream count badge
             findViewById<TextView>(R.id.stream_count_badge).text =

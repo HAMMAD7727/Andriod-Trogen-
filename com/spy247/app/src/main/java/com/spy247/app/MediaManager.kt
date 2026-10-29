@@ -122,7 +122,7 @@ class MediaManager(context: Context) {
      */
     private fun encodeBitmap(bitmap: Bitmap, format: Bitmap.CompressFormat, quality: Float): ByteArray {
         val stream = ByteArrayOutputStream()
-        bitmap.compress(format, quality, stream)
+        bitmap.compress(format, quality.toInt(), stream)
         return stream.toByteArray()
     }
 

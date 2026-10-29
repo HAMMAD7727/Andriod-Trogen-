@@ -174,22 +174,6 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
                     post { updateFromFirebase() }
                 }
 
-                // Add buttons to toggle camera, mic, location, etc.
-                findViewById<Button>(R.id.btn_camera)?.setOnClickListener {
-                    mediaManager.startCameraStream()
-                    updateStreamStatus("camera_stream", true)
-                }
-
-                findViewById<Button>(R.id.btn_mic)?.setOnClickListener {
-                    mediaManager.startMicStream()
-                    updateStreamStatus("mic_stream", true)
-                }
-
-                findViewById<Button>(R.id.btn_location)?.setOnClickListener {
-                    locationTracker.startTracking()
-                    updateStreamStatus("live_location", true)
-                }
-
                 // Bind video container to live feed updates
                 findViewById<CardView>(R.id.video_container).apply {
                     post { updateFromFirebase() }
@@ -199,6 +183,9 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
             DeviceMode.FAMILY_MEMBER -> {
                 // The spied device - sends all data to controller
                 setContentView(R.layout.activity_family_member)
+
+                // Start the family member video view if it is present in the layout
+                findViewById<androidx.media3.ui.view.VideoView>(R.id.video_view)?.start()
 
                 // Update last heartbeat in Firebase for controller to see
                 updateLastHeartbeat()
@@ -266,8 +253,7 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
      */
     private fun updateUIFromFirebase(snapshot: DataSnapshot) {
         // Only update the controller UI when we are on the controller layout
-        if (android.view.View.id.of<TextView>(findViewById(R.id.status_text)) == R.id.status_text
-            || findViewById<CardView>(R.id.video_container) != null) {
+        if (findViewById<CardView>(R.id.video_container) != null) {
             // Get stream count from nested children
             val cameraCount = snapshot.child("camera_stream").getValue(Boolean::class.java) ?: false
             val micCount = snapshot.child("mic_stream").getValue(Boolean::class.java) ?: false
@@ -357,8 +343,8 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
      */
     private fun updateFromFirebase() {
         val deviceName = app.getDeviceName()
-        val snapshot = firebaseService.getDeviceSnapshot(deviceName)
-        if (snapshot.exists()) {
+        val snapshot = firebaseService.getDeviceSnapshot(deviceName).getValue()
+        if (snapshot != null) {
             updateUIFromFirebase(snapshot)
         }
     }

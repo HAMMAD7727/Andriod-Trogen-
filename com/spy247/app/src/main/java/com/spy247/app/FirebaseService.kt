@@ -95,7 +95,12 @@ class FirebaseService(context: Context) {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e(TAG, "Stream $streamType listener cancelled", error)
+                Log.e(TAG, "Stream $streamType listener cancelled", error.toException())
+            }
+
+            override fun onDataChange(snapshot: DataSnapshot) {
+                snapshot.childrenCount
+
             }
         }
 
@@ -131,7 +136,7 @@ class FirebaseService(context: Context) {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                // Ignore heartbeat errors
+                Log.w(TAG, "Heartbeat listener cancelled")
             }
         }
 
@@ -179,10 +184,15 @@ class FirebaseService(context: Context) {
             node.setValue(mapOf(fieldName to value))
         } else {
             // Get current value and merge with new field
-            val snapshot = node.getValue(Map::class.java) ?: mapOf()
-            val updatedMap = (snapshot as? MutableMap<String, Any>)?.apply {
-                put(fieldName, value)
-            } ?: mapOf(fieldName to value)
+            val snapshot = node.getValue() as? Map<*, *> ?: emptyMap()
+            val updatedMap: MutableMap<String, Any> = mutableMapOf()
+            for ((k, v) in snapshot) {
+                if (k is String) {
+                    updatedMap[k] = v as Any
+                }
+            }
+            updatedMap[fieldName] = value
+            null
 
             node.setValue(updatedMap)
         }
@@ -208,6 +218,7 @@ class FirebaseService(context: Context) {
 
         allDevices.addValueEventListener(listener)
         activeListeners["all_devices"] = listener
+        listener.onDataChange(allDevices)
     }
 
     /**

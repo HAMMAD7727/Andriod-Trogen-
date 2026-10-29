@@ -4,4 +4,11 @@ import android.app.Service
 import android.content.Intent
 import android.os.IBinder
 
-/**\n * Foreground service placeholder so the manifest entry compiles.\n */\nclass ForegroundService : Service() {\n    override fun onBind(intent: Intent?): IBinder? = null\n}
+/**
+ * Foreground service placeholder so the manifest entry compiles.
+ */
+class ForegroundService : Service() {
+    override fun onBind(intent: Intent?): IBinder? {
+        return null
+    }
+}

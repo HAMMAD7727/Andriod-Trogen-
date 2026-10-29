@@ -246,13 +246,11 @@ class FirebaseService(context: Context) {
      * Helper to get the current timestamp from Firebase (useful for sync indicators)
      */
     fun getCurrentTimestamp(): Long {
-        val snapshot = dbRef.child("meta").child("last_update")
+        val metaRef = dbRef.child("meta").child("last_update")
 
-        if (snapshot.getChildrenCount() == 0L) {
-            snapshot.setValue(System.currentTimeMillis())
-        }
+        metaRef.setValue(System.currentTimeMillis())
 
-        return snapshot.getValue(Long::class.java) ?: System.currentTimeMillis()
+        return System.currentTimeMillis()
     }
 
     /**

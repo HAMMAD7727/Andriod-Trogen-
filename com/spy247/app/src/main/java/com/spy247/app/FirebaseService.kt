@@ -45,14 +45,29 @@ class FirebaseService(context: Context) {
         }
     }
 
+    private fun refHasData(ref: DatabaseReference): Boolean {
+        // Use a synchronous single-value fetch so we don't depend on
+        // snapshot.exists() / reified getValue() APIs that fail to resolve on CI.
+        var hasData = false
+        ref.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                hasData = snapshot.getChildrenCount() > 0
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                hasData = false
+            }
+        })
+        return hasData
+    }
+
     /**
      * Subscribe to a specific device's data - used for controller to listen to family member
      */
     fun subscribeToDevice(deviceName: String, listener: ValueEventListener) {
         val node = dbRef.child("devices").child(deviceName)
 
-        // Auto-create the node structure if it doesn't exist
-        if (!node.exists()) {
+        if (!refHasData(node)) {
             node.setValue(mapOf(
                 "type" to "device",
                 "name" to deviceName,
@@ -76,11 +91,14 @@ class FirebaseService(context: Context) {
     /**
      * Subscribe to a specific stream type (camera, mic, location, etc.)
      */
-    private fun subscribeToStream(parentNode: DatabaseReference, streamType: String, listener: ValueEventListener) {
+    private fun subscribeToStream(
+        parentNode: DatabaseReference,
+        streamType: String,
+        listener: ValueEventListener
+    ) {
         val streamNode = parentNode.child(streamType)
 
-        // Auto-create the node structure if it doesn't exist
-        if (!streamNode.exists()) {
+        if (!refHasData(streamNode)) {
             streamNode.setValue(mapOf(
                 "type" to streamType,
                 "status" to "active",
@@ -88,7 +106,6 @@ class FirebaseService(context: Context) {
             ))
         }
 
-        // Add value listener for real-time updates
         val childListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 // Handle stream data changes here - can be overridden by subclasses
@@ -96,11 +113,6 @@ class FirebaseService(context: Context) {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e(TAG, "Stream $streamType listener cancelled", error.toException())
-            }
-
-            override fun onDataChange(snapshot: DataSnapshot) {
-                snapshot.childrenCount
-
             }
         }
 
@@ -114,16 +126,14 @@ class FirebaseService(context: Context) {
     private fun setupHeartbeat(deviceId: String) {
         val heartbeatRef = dbRef.child("devices").child(deviceId).child("heartbeat")
 
-        // Auto-create the heartbeat node if it doesn't exist
-        if (!heartbeatRef.exists()) {
+        if (!refHasData(heartbeatRef)) {
             heartbeatRef.setValue(System.currentTimeMillis())
         }
 
-        // Listen to heartbeat updates (every 5 seconds)
         val heartbeatListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
-                    val lastHeartbeat = snapshot.getValue(Long::class.java) ?: return
+                if (snapshot.getChildrenCount() > 0) {
+                    val lastHeartbeat: Long = snapshot.getValue(Long::class.java) ?: return@onDataChange
                     val now = System.currentTimeMillis()
 
                     // If heartbeat is within 10 seconds, connection is good
@@ -136,7 +146,7 @@ class FirebaseService(context: Context) {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.w(TAG, "Heartbeat listener cancelled")
+                // Ignore heartbeat errors
             }
         }
 
@@ -150,8 +160,7 @@ class FirebaseService(context: Context) {
     fun <T> batchUpdate(nodeName: String, valueMap: Map<String, T>) {
         val node = dbRef.child("devices").child(nodeName)
 
-        // Auto-create the node if it doesn't exist
-        if (!node.exists()) {
+        if (!refHasData(node)) {
             node.setValue(valueMap)
         } else {
             node.setValue(valueMap)
@@ -179,23 +188,37 @@ class FirebaseService(context: Context) {
     fun updateField(deviceName: String, fieldName: String, value: Any) {
         val node = dbRef.child("devices").child(deviceName)
 
-        if (!node.exists()) {
-            // Create new node if it doesn't exist
-            node.setValue(mapOf(fieldName to value))
-        } else {
-            // Get current value and merge with new field
-            val snapshot = node.getValue() as? Map<*, *> ?: emptyMap()
-            val updatedMap: MutableMap<String, Any> = mutableMapOf()
-            for ((k, v) in snapshot) {
-                if (k is String) {
-                    updatedMap[k] = v as Any
+        node.runTransaction(object : Transaction.Handler {
+            override fun doTransaction(currentData: MutableData): Transaction.Result {
+                val currentMap = currentData.getValue() as? MutableMap<*, *>
+                val updatedMap: MutableMap<String, Any> =
+                    if (currentMap != null) {
+                        mutableMapOf<String, Any>().apply {
+                            for ((k, v) in currentMap) {
+                                if (k is String) {
+                                    put(k, v as Any)
+                                }
+                            }
+                        }
+                    } else {
+                        mutableMapOf()
+                    }
+
+                updatedMap[fieldName] = value
+                currentData.value = updatedMap
+                return Transaction.success(currentData)
+            }
+
+            override fun onComplete(
+                error: DatabaseError?,
+                committed: Boolean,
+                currentData: DataSnapshot?
+            ) {
+                if (error != null) {
+                    Log.w(TAG, "updateField transaction failed", error.toException())
                 }
             }
-            updatedMap[fieldName] = value
-            null
-
-            node.setValue(updatedMap)
-        }
+        })
     }
 
     /**
@@ -211,14 +234,12 @@ class FirebaseService(context: Context) {
     fun listenToAllDevices(listener: ValueEventListener) {
         val allDevices = dbRef.child("devices")
 
-        // Auto-create the node structure if it doesn't exist
-        if (!allDevices.exists()) {
+        if (!refHasData(allDevices)) {
             allDevices.setValue(mapOf("status" to "active"))
         }
 
         allDevices.addValueEventListener(listener)
         activeListeners["all_devices"] = listener
-        listener.onDataChange(allDevices)
     }
 
     /**
@@ -227,8 +248,7 @@ class FirebaseService(context: Context) {
     fun getCurrentTimestamp(): Long {
         val snapshot = dbRef.child("meta").child("last_update")
 
-        if (!snapshot.exists()) {
-            // Initialize meta node
+        if (snapshot.getChildrenCount() == 0L) {
             snapshot.setValue(System.currentTimeMillis())
         }
 
@@ -241,8 +261,7 @@ class FirebaseService(context: Context) {
     fun updateLastUpdateTimestamp() {
         val metaRef = dbRef.child("meta").child("last_update")
 
-        if (!metaRef.exists()) {
-            // Initialize meta node
+        if (metaRef.getChildrenCount() == 0L) {
             metaRef.setValue(System.currentTimeMillis())
         }
     }

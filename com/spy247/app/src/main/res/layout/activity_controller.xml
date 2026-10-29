@@ -122,7 +122,7 @@
             app:cardElevation="8dp">
 
             <!-- Video View with rounded corners -->
-            <androidx.media3.ui.PlayerView
+            <android.widget.VideoView
                 android:id="@+id/video_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"/>

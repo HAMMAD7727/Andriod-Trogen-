@@ -61,9 +61,6 @@ dependencies {
     implementation("com.google.android.material:material:1.9.0")    // Firebase Realtime Database
     implementation("com.google.firebase:firebase-database:23.0.0")
 
-    // Media3 UI (VideoView used in layout XML)
-    implementation("androidx.media3:media3-ui:1.5.0")
-
     // Gson for JSON serialization of media chunks
     implementation("com.google.code.gson:gson:2.10.1")
     

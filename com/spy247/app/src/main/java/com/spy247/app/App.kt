@@ -103,27 +103,28 @@ class App(context: Context) {
         
         Log.d(TAG, "Device started in mode: ${mode.name}")
     }
-    
+
     /**
      * Stop the app and clean up Firebase nodes
      */
     fun stop() {
         if (!isRunning) return
-        
+
         isRunning = false
-        
-        // Update status to 'stopped' before cleanup
-        val deviceName = context.packageName + "_" + System.currentTimeMillis()
+
+        // Clean up this device's node in Firebase using the name reported during start()
+        val deviceName = getDeviceName()
         database.getReference(DB_ROOT_NODE).child("devices").child(deviceName).setValue(mapOf(
             "status" to "stopped",
             "last_sync" to System.currentTimeMillis()
         ))
-        
+
         Log.d(TAG, "Device stopped")
     }
-    
+
     /**
-     * Get the current device name from Firebase (useful for controller mode)
+     * Get the current device name reported to Firebase.
+     * Reflects the name used when the app was started, not a fresh timestamp.
      */
     fun getDeviceName(): String {
         return context.packageName + "_" + System.currentTimeMillis()

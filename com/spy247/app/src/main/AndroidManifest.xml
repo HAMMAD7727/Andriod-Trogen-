@@ -66,13 +66,7 @@
         <service
             android:name=".ForegroundService"
             android:enabled="true"
-            android:exported="false">
-            
-            <!-- Notification channel for foreground service -->
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
-        </service>
+            android:exported="false" />
 
     </application>
 </manifest>

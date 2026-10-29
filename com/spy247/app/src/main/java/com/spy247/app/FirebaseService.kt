@@ -261,8 +261,16 @@ class FirebaseService(context: Context) {
     fun updateLastUpdateTimestamp() {
         val metaRef = dbRef.child("meta").child("last_update")
 
-        if (metaRef.getChildrenCount() == 0L) {
-            metaRef.setValue(System.currentTimeMillis())
-        }
+        metaRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.getChildrenCount() == 0L) {
+                    metaRef.setValue(System.currentTimeMillis())
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Ignore timestamp fetch errors
+            }
+        })
     }
 }

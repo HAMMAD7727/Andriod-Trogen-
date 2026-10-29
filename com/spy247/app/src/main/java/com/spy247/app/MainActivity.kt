@@ -192,9 +192,7 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
                 setContentView(R.layout.activity_family_member)
 
                 // Start the family member video view if it is present and initialized
-                findViewById<androidx.media3.ui.view.VideoView>(R.id.video_view)?.takeIf {
-                    it.isAttachedToWindow
-                }?.start()
+                findViewById<androidx.media3.ui.view.VideoView>(R.id.video_view)?.start()
 
                 // Update last heartbeat in Firebase for controller to see
                 updateLastHeartbeat()
@@ -296,10 +294,17 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val currentStreams: MutableMap<String, Boolean> =
                     if (snapshot.getChildrenCount() > 0L) {
-                        snapshot.getValue(Map::class.java)?.toMutableMap()
-                            ?.filterKeys { it is String }?.mapKeys { it.key as String }
-                            ?.mapValues { it.value as Boolean } ?: mutableMapOf()
-                    } else {
+                        val rawStreams = snapshot.getValue(Map::class.java)
+                        val base: MutableMap<String, Boolean> =
+                            if (rawStreams != null) {
+                                rawStreams.filterKeys { it is String }
+                                    .mapKeys { it.key as String }
+                                    .mapValues { it.value as Boolean }
+                                    .toMutableMap()
+                            } else {
+                                mutableMapOf()
+                            }
+                        base
                         mutableMapOf(
                             "camera_stream" to false,
                             "mic_stream" to false,
@@ -330,10 +335,17 @@ class MainActivity : AppCompatActivity(), ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val currentStatus: MutableMap<String, Any> =
                     if (snapshot.getChildrenCount() > 0L) {
-                        snapshot.getValue(Map::class.java)?.toMutableMap()
-                            ?.filterKeys { it is String }?.mapKeys { it.key as String }
-                            ?.mapValues { it.value as Any } ?: mutableMapOf()
-                    } else {
+                        val rawStatus = snapshot.getValue(Map::class.java)
+                        val base: MutableMap<String, Any> =
+                            if (rawStatus != null) {
+                                rawStatus.filterKeys { it is String }
+                                    .mapKeys { it.key as String }
+                                    .mapValues { it.value as Any }
+                                    .toMutableMap()
+                            } else {
+                                mutableMapOf()
+                            }
+                        base
                         mutableMapOf(
                             "connection" to "connected",
                             "battery_level" to 100,
